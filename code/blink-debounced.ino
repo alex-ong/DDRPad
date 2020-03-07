@@ -3,9 +3,18 @@
 //This is the LED pin for a Teensy LC, may need to change on other boards
 const int LedPin = 17;
 //The analog threshold value for triggering a button
-const int TriggerThreshold = 500;
+
 unsigned long time_now = 0;
- 
+
+//todo: set these pins
+const int LEFT = 18;
+const int DOWN = 19;
+const int RIGHT = 20;
+const int UP = 21;
+const unsigned long DEBOUNCE_TIME[] = { 5000, 50000, 5000, 5000};  //5000 = 5ms, 50000 = 50ms
+bool filtered[4] = {false, false, false, false};
+long unsigned int debounce_timer[4] = {0}; //last change to output
+
 void setup() {
  
   Serial.begin(9600);
@@ -15,36 +24,49 @@ void setup() {
   //However this method does not support useful pressure sensitivity adjustments
   //By soldering 1K resistors as pull-ups on the board, you can make the buttons require more pressure
   //The first version did that, but making the buttons more difficult didn't seem very desirable
-  pinMode(18, INPUT);
-  pinMode(19, INPUT);
-  pinMode(20, INPUT);
-  pinMode(21, INPUT);  
+  pinMode(LEFT, INPUT);
+  pinMode(DOWN, INPUT);
+  pinMode(RIGHT, INPUT);
+  pinMode(UP, INPUT);  
   Joystick.begin(false); 
 }
 
 void loop() {
   //pin mappings for where things got soldered
-  int p[4] = {18, 19, 20, 21};
-  int t[4] = {500,500,500,500};
+  //left, down, right, up
+  int p[4] = {LEFT,DOWN,RIGHT,UP};
+  int t[4] = {900,750,750,600};
   //analog read values
-  int a[4] = {0};
+  int a[4] = {0,0,0,0}; 
+  
   //check if any buttons are pressed, so we know whether to light the LED
   bool pressed = false;
-    
+  
   //read each pin, and set that Joystick button appropriately
   for(int i = 0; i < 4; ++i)
   {
     a[i] = analogRead(p[i]);
-    if(a[i] < t[i])
+    bool newValue = a[i] < t[i];
+    bool oldValue = filtered[i];
+    bool timerValid = (time_now - debounce_timer[i]) >= DEBOUNCE_TIME[i];
+    
+    if (timerValid && newValue != oldValue)
     {
-      pressed = true;
-      Joystick.pressButton(i);
-      //Joystick.setButton(i, 1);
+        if (newValue) {          
+            Joystick.pressButton(i);          
+            filtered[i] = true;
+            debounce_timer[i] = time_now;
+        } else if (!newValue) {
+            Joystick.releaseButton(i);
+            filtered[i] = false;
+            debounce_timer[i] = time_now;
+        }
     }
-    else
+    
+    
+    if (filtered[i])
     {
-      Joystick.releaseButton(i);
-      //Joystick.button(i, 0);
+        pressed = true;
     }
   }
  
@@ -64,12 +86,17 @@ void loop() {
     char buffer [128]; // must be large enough for your whole string!
     sprintf (buffer, "Pins: %d,%d,%d,%d", a[0],a[1],a[2],a[3]);
     Serial.println (buffer);    
-    delay(250);
+    delay(100);
   }
   
-  delayMicroseconds(1); //limits the pad to run at 1000hz
-  //This limits the pad to run at 200 Hz. This version of the code does not debounce.
   Joystick.sendState();
+  
+  //busy wait version of delay. we should use this one.
+
+
+  
   while (micros() - time_now < 1000) {}
   time_now = micros();
+
+  
 }
