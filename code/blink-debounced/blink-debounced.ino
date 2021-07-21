@@ -1,7 +1,7 @@
 #include <Joystick.h>
 
 //This is the LED pin for a Teensy LC, may need to change on other boards
-const int LedPin = 17;
+const int LED_PIN = 17;
 //The analog threshold value for triggering a button
 
 unsigned long time_now = 0;
@@ -18,7 +18,7 @@ long unsigned int debounce_timer[4] = {0}; //last change to output
 void setup() {
  
   Serial.begin(9600);
-  pinMode(LedPin, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
  
   //The analog pins are configured with internal pull-up resistors, which makes for a very simple circuit
   //However this method does not support useful pressure sensitivity adjustments
@@ -72,11 +72,11 @@ void loop() {
  
   //Illuminate the LED if a button is pressed
   if(pressed) {
-    digitalWrite(LedPin, LOW);
+    digitalWrite(LED_PIN, LOW);
     TXLED1;
   }
   else {
-    digitalWrite(LedPin, HIGH);
+    digitalWrite(LED_PIN, HIGH);
     TXLED0;
   }
  
@@ -91,10 +91,7 @@ void loop() {
   
   Joystick.sendState();
   
-  //busy wait version of delay. we should use this one.
-
-
-  
+  //busy wait version of delay. More accurate 
   while (micros() - time_now < 1000) {}
   time_now = micros();
 
