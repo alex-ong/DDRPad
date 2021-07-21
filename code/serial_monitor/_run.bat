@@ -1,1 +1,1 @@
-pipenv run python serial_prog.py
+pipenv run python gui.py

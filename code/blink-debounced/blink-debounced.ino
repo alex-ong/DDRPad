@@ -1,4 +1,5 @@
 #include <Joystick.h>
+#include <EEPROM.h>
 
 //This is the LED pin for a Teensy LC, may need to change on other boards
 const int LED_PIN = 17;
@@ -9,11 +10,50 @@ unsigned long time_now = 0;
 //todo: set these pins
 const int LEFT = 18;
 const int DOWN = 19;
-const int RIGHT = 20;
 const int UP = 21;
+const int RIGHT = 20;
+
 const unsigned long DEBOUNCE_TIME[] = { 5000, 5000, 5000, 5000};  //5000 = 5ms, 50000 = 50ms
+int pins[4] = {LEFT,DOWN,UP,RIGHT};
+int sens[4] = {800, 350, 775, 550}; //sensitivity. Below = trigger.
 bool filtered[4] = {false, false, false, false};
 long unsigned int debounce_timer[4] = {0}; //last change to output
+bool DEBUG = false;
+
+void writeIntIntoEEPROM(int address, int number)
+{ 
+  byte byte1 = number >> 8;
+  byte byte2 = number & 0xFF;
+  EEPROM.write(address, byte1);
+  EEPROM.write(address + 1, byte2);
+}
+
+int readIntFromEEPROM(int address)
+{
+  byte byte1 = EEPROM.read(address);
+  byte byte2 = EEPROM.read(address + 1);
+  return (byte1 << 8) + byte2;
+}
+
+void WriteConfigIntoEEPROM()
+{
+    for (int i = 0; i < 4; i++) {
+        writeIntIntoEEPROM(i*sizeof(int), sens[i]);
+    }
+}
+
+void ReadConfigFromEEPROM()
+{
+    for (int i = 0; i < 4; i++) {
+        int before = sens[i];
+        sens[i] = readIntFromEEPROM(i*sizeof(int));
+        if (sens[i] == ((255 << 8) + 255))
+        {
+            sens[i] = before;
+        }
+    }    
+}
+
 
 void setup() {
  
@@ -28,14 +68,13 @@ void setup() {
   pinMode(DOWN, INPUT);
   pinMode(RIGHT, INPUT);
   pinMode(UP, INPUT);  
+  ReadConfigFromEEPROM();
   Joystick.begin(false); 
 }
 
+
 void loop() {
-  //pin mappings for where things got soldered
-  //left, down, right, up
-  int p[4] = {LEFT,DOWN,RIGHT,UP};
-  int t[4] = {800,350,550,775};
+
   //analog read values
   int a[4] = {0,0,0,0}; 
   
@@ -45,8 +84,8 @@ void loop() {
   //read each pin, and set that Joystick button appropriately
   for(int i = 0; i < 4; ++i)
   {
-    a[i] = analogRead(p[i]);
-    bool newValue = a[i] < t[i];
+    a[i] = analogRead(pins[i]);
+    bool newValue = a[i] < sens[i];
     bool oldValue = filtered[i];
     bool timerValid = (time_now - debounce_timer[i]) >= DEBOUNCE_TIME[i];
     
@@ -81,12 +120,32 @@ void loop() {
   }
  
   //Enable this block if you need to debug the electricals of the pad
-  if(0)
+  if(DEBUG)
   {
-    char buffer [128]; // must be large enough for your whole string!
-    sprintf (buffer, "Pins: %d,%d,%d,%d", a[0],a[1],a[2],a[3]);
+    char buffer [64]; // must be large enough for your whole string!
+    sprintf (buffer, "Pins: %d,%d,%d,%d\n", a[0],a[1],a[2],a[3]);
+    Serial.println (buffer);
+    sprintf (buffer, "Sens: %d,%d,%d,%d\n", a[0],a[1],a[2],a[3]);
     Serial.println (buffer);    
     delay(100);
+  }
+  
+  if (Serial.available() >= 1)
+  {
+      int messageType = Serial.read();
+      if (messageType == 1)
+      {
+          DEBUG = true;
+      } 
+      else if (messageType == 2)
+      {
+          DEBUG = false;
+      } 
+      else if (messageType == 3)
+      {
+          ReadConfigFromSerial();
+          WriteConfigIntoEEPROM();              
+      }
   }
   
   Joystick.sendState();
@@ -96,4 +155,15 @@ void loop() {
   time_now = micros();
 
   
+}
+
+void ReadConfigFromSerial()
+{
+    for (int i = 0; i < 4; i++)
+    { 
+        int v1 = Serial.read();
+        int v2 = Serial.read();
+        int value = (v1 << 8) + v2;
+        sens[i] = value;
+    }
 }

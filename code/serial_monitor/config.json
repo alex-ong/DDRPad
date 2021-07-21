@@ -1,6 +1,6 @@
 {
     "port_comment": "name of com port to use by default",
     "port": "COM3",
-    "arrow_comment": "left, up down right, (trigger, max)",
-    "arrows": [[800,1000],[800,1000],[800,1000],[800,1000]]
+    "arrow_comment": "left, down up right, (trigger, max)",
+    "arrows": [[800,1000],[350,1000],[775,1000],[550,1000]]
 }
