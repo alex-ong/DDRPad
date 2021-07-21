@@ -26,6 +26,7 @@ import json
 START_DEBUG = 1
 STOP_DEBUG = 2
 WRITE_SENS = 3
+WRITE_DEBOUNCE = 4
 ENDIAN = "big"
 
 
@@ -72,6 +73,17 @@ def set_sens_config(value):
     config["arrows"] = value
     write_config(config)
 
+    
+def get_debounce():
+    config = load_config()
+    return config["debounce"]
+
+
+def set_debounce_config(value):
+    config = load_config()
+    config["debounce"] = value
+    write_config(config)
+
 
 class SerialPort:
     def __init__(self):
@@ -99,10 +111,18 @@ class SerialPort:
         return lines
 
     def port_write_sens(self):
-        config = load_config()
-        values = config["arrows"]
+        values = get_sens()
         values = [value.to_bytes(2, ENDIAN) for value in values]
         header = WRITE_SENS.to_bytes(1, ENDIAN)
+        values = [header] + values
+        values = b"".join(values)
+        print(values)
+        self.port.write(values)
+        
+    def port_write_debounce(self):
+        values = get_debounce()
+        values = [value.to_bytes(4, ENDIAN) for value in values]
+        header = WRITE_DEBOUNCE.to_bytes(1, ENDIAN)
         values = [header] + values
         values = b"".join(values)
         print(values)

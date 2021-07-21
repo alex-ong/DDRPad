@@ -7,5 +7,12 @@
         350,
         775,
         550
-    ]
+    ],
+    "debounce": [
+        0,
+        0,
+        0,
+        0
+    ],
+    "debounce_comment": "debounce in microseconds, 5000 = 5ms"
 }

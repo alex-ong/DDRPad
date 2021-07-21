@@ -1,5 +1,5 @@
 #include <Joystick.h>
-#include <EEPROM.h>
+#include <EEPROMex.h>
 
 //This is the LED pin for a Teensy LC, may need to change on other boards
 const int LED_PIN = 17;
@@ -13,47 +13,54 @@ const int DOWN = 19;
 const int UP = 21;
 const int RIGHT = 20;
 
-const unsigned long DEBOUNCE_TIME[] = { 5000, 5000, 5000, 5000};  //5000 = 5ms, 50000 = 50ms
+unsigned long DEBOUNCE_TIME[] = { 5000, 5000, 5000, 5000};  //5000 = 5ms, 50000 = 50ms
 int pins[4] = {LEFT,DOWN,UP,RIGHT};
 int sens[4] = {800, 350, 775, 550}; //sensitivity. Below = trigger.
 bool filtered[4] = {false, false, false, false};
 long unsigned int debounce_timer[4] = {0}; //last change to output
 bool DEBUG = false;
 
-void writeIntIntoEEPROM(int address, int number)
-{ 
-  byte byte1 = number >> 8;
-  byte byte2 = number & 0xFF;
-  EEPROM.write(address, byte1);
-  EEPROM.write(address + 1, byte2);
-}
+const int SENS_OFFSET_EEPROM = 0;
+const int DEBOUNCE_OFFSET_EEPROM = sizeof(int)*4;
 
-int readIntFromEEPROM(int address)
-{
-  byte byte1 = EEPROM.read(address);
-  byte byte2 = EEPROM.read(address + 1);
-  return (byte1 << 8) + byte2;
-}
 
-void WriteConfigIntoEEPROM()
+void WriteIntsToEEPROM(int offset, int target[])
 {
     for (int i = 0; i < 4; i++) {
-        writeIntIntoEEPROM(i*sizeof(int), sens[i]);
+        EEPROM.updateInt(offset + i*sizeof(int), target[i]);
     }
 }
 
-void ReadConfigFromEEPROM()
+void ReadIntsFromEEPROM(int offset, int target[])
 {
     for (int i = 0; i < 4; i++) {
-        int before = sens[i];
-        sens[i] = readIntFromEEPROM(i*sizeof(int));
-        if (sens[i] == ((255 << 8) + 255))
+        uint16_t value = EEPROM.readInt(offset + i*sizeof(int));
+        if (value != 0xFFFF)
         {
-            sens[i] = before;
+            target[i] = (int)value;
         }
     }    
 }
 
+void ReadLongsFromEEPROM(int offset, int target[])
+{
+  for (int i = 0; i < 4; i++)
+  {    
+    uint32_t value = EEPROM.readLong(offset + i*sizeof(long));
+    if (value != 0xFFFFFFFF)
+    {
+      target[i] = (long)value;
+    }
+  }
+}
+
+void WriteLongsToEEPROM(int offset, unsigned long target[])
+{
+  for (int i = 0; i < 4; i++)
+  {
+    EEPROM.updateLong(offset + i*sizeof(long), target[i]);
+  }
+}
 
 void setup() {
  
@@ -68,7 +75,9 @@ void setup() {
   pinMode(DOWN, INPUT);
   pinMode(RIGHT, INPUT);
   pinMode(UP, INPUT);  
-  ReadConfigFromEEPROM();
+  ReadIntsFromEEPROM(SENS_OFFSET_EEPROM, sens);
+  //todo: implement.
+  //ReadConfigFromEEPROM(DEBOUNCE_OFFSET_EEPROM, DEBOUNCE_TIME);
   Joystick.begin(false); 
 }
 
@@ -122,10 +131,12 @@ void loop() {
   //Enable this block if you need to debug the electricals of the pad
   if(DEBUG)
   {
-    char buffer [64]; // must be large enough for your whole string!
+    char buffer [128]; // must be large enough for your whole string!
     sprintf (buffer, "Pins: %d,%d,%d,%d\n", a[0],a[1],a[2],a[3]);
     Serial.println (buffer);
     sprintf (buffer, "Sens: %d,%d,%d,%d\n", sens[0],sens[1],sens[2],sens[3]);
+    Serial.println (buffer);    
+    sprintf (buffer, "Debounce: %lu,%lu,%lu,%lu\n", DEBOUNCE_TIME[0], DEBOUNCE_TIME[1], DEBOUNCE_TIME[2], DEBOUNCE_TIME[3]);
     Serial.println (buffer);    
     delay(10);
   }
@@ -143,8 +154,14 @@ void loop() {
       } 
       else if (messageType == 3)
       {
-          ReadConfigFromSerial();
-          WriteConfigIntoEEPROM();              
+          ReadIntsFromSerial(sens);
+          WriteIntsToEEPROM(SENS_OFFSET_EEPROM, sens);              
+      }
+      else if (messageType == 4)
+      {
+          
+          ReadLongsFromSerial(DEBOUNCE_TIME);
+          WriteLongsToEEPROM(DEBOUNCE_OFFSET_EEPROM, DEBOUNCE_TIME);              
       }
   }
   
@@ -157,13 +174,29 @@ void loop() {
   
 }
 
-void ReadConfigFromSerial()
+void ReadIntsFromSerial(int target[])
 {
     for (int i = 0; i < 4; i++)
     { 
         int v1 = Serial.read();
         int v2 = Serial.read();
         int value = (v1 << 8) + v2;
-        sens[i] = value;
+        target[i] = value;
+    }
+}
+
+void ReadLongsFromSerial(unsigned long target[])
+{
+    for (int i = 0; i < 4; i++)
+    {
+        long v1 = Serial.read();
+        long v2 = Serial.read();
+        long v3 = Serial.read();
+        long v4 = Serial.read();
+        long value = (v1 << 24) + (v2 << 16) + (v3 << 8) + v4;
+        if (value > 100000){
+          value = 100000; //100ms
+        }
+        target[i] = value;
     }
 }
