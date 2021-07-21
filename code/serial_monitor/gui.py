@@ -1,6 +1,15 @@
 import serial_prog
 import tkinter as tk
-from tkinter import Tk, Label, Button, StringVar, OptionMenu
+from tkinter import Tk, Label, Button, StringVar, OptionMenu, Entry, IntVar
+import tkinter.font as tkFont
+
+
+def clamp(value):
+    if value <= 0:
+        value = 0
+    if value >= 1000:
+        value = 1000
+    return value
 
 
 class SerialGUI:
@@ -30,14 +39,26 @@ class SerialGUI:
         self.connect_button = Button(master, text="Connect", command=self.connect)
         self.connect_button.pack()
 
+        Label(master, text="< v ^ >").pack()
+        Label(master, text="Current pad values").pack()
         self.status_label = Label(master, text="status goes here")
         self.status_label.pack()
 
+        Label(master, text="Pad's firmware sensitivities").pack()
         self.sens_label = Label(master, text="sens goes here")
         self.sens_label.pack()
 
-        self.debug_label = Label(master, text="Debug is off")
-        self.debug_label.pack()
+        self.sens_vars = []
+        sensitivities = serial_prog.get_sens()
+        frame = tk.Frame(master)
+        frame.pack()
+        for index, item in enumerate(sensitivities):
+            trigger_var = IntVar()
+            trigger_var.set(item)
+            topEntry = Entry(frame, textvariable=trigger_var)
+            topEntry.bind("<FocusOut>", self.change_sens)
+            topEntry.grid(row=0, column=index)
+            self.sens_vars.append(trigger_var)
 
         self.debug_on = Button(
             master, text="Start pad data", command=self.turn_debug_on
@@ -52,6 +73,27 @@ class SerialGUI:
 
         self.connection = None
 
+    def change_sens(self, *args):
+        values = serial_prog.get_sens()
+        for index, item in enumerate(self.sens_vars):
+            try:
+                value = item.get()
+                print(value)
+                value = int(value)
+                print(value)
+                value = clamp(value)
+                print(value)
+                values[index] = value
+                item.set(value)
+            except:
+                item.set(values[index])
+                raise
+        serial_prog.set_sens_config(values)
+        self.update()
+
+    def update(self):
+        self.master.update()
+
     def on_change_port(self, *args):
         value = self.port_var.get()
         if value != "No ports available":
@@ -62,27 +104,31 @@ class SerialGUI:
         self.connection.connect()
         self.port_select.configure(state="disabled")
         self.connect_button.configure(command=self.disconnect)
-        self.connect_button.configure(text="Disconnect")
-        self.debug_on.configure(state="enabled")
-        self.debug_off.configure(state="disabled")
+        self.connect_button["text"] = "Disconnect"
+        self.debug_on["state"] = "normal"
+        self.debug_off["state"] = "disabled"
+        self.update()
 
     def disconnect(self):
         self.connection.disconnect()
         self.connection = None
         self.connect_button.configure(command=self.connect)
-        self.connect_button.configure(text="Connect")
-        self.debug_on.configure(state="disabled")
-        self.debug_off.configure(state="disabled")
+        self.connect_button["text"] = "Connect"
+        self.debug_on["state"] = "disabled"
+        self.debug_off["state"] = "disabled"
+        self.update()
 
     def turn_debug_off(self):
         self.connection.port_debug_off()
-        self.debug_on.configure(state="enabled")
-        self.debug_off.configure(state="disabled")
+        self.debug_on["state"] = "normal"
+        self.debug_off["state"] = "disabled"
+        self.update()
 
     def turn_debug_on(self):
         self.connection.port_debug_on()
-        self.debug_on.configure(state="disabled")
-        self.debug_off.configure(state="enabled")
+        self.debug_on["state"] = "disabled"
+        self.debug_off["state"] = "normal"
+        self.update()
 
     def read(self):
         data = self.connection.read()
@@ -91,24 +137,29 @@ class SerialGUI:
         pins = None
         sens = None
         for item in data:
-            item = item.lower()
+            item = item.decode("utf-8").lower()
             if item.startswith("pins"):
                 pins = item
-            if items.startswith("sens"):
+            if item.startswith("sens"):
                 sens = item
         if pins is not None:
-            self.status_label.configure(text=pins)
+            self.status_label["text"] = pins
         if sens is not None:
-            self.sens_label.configure(text=sens)
+            self.sens_label["text"] = sens
+
+        self.update()
 
 
 def task(my_gui):
     if my_gui.connection is not None:
         my_gui.read()
-    root.after(0, lambda: task(my_gui))  # reschedule event in 2 seconds
+    root.after(1, lambda: task(my_gui))  # reschedule event in 2 seconds
 
 
 root = tk.Tk()
+default_font = tkFont.nametofont("TkDefaultFont")
+default_font.configure(size=20)
+root.option_add("*Font", "TkDefaultFont")
 my_gui = SerialGUI(root)
 root.after(2000, lambda: task(my_gui))
 root.mainloop()

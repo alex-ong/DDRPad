@@ -125,9 +125,9 @@ void loop() {
     char buffer [64]; // must be large enough for your whole string!
     sprintf (buffer, "Pins: %d,%d,%d,%d\n", a[0],a[1],a[2],a[3]);
     Serial.println (buffer);
-    sprintf (buffer, "Sens: %d,%d,%d,%d\n", a[0],a[1],a[2],a[3]);
+    sprintf (buffer, "Sens: %d,%d,%d,%d\n", sens[0],sens[1],sens[2],sens[3]);
     Serial.println (buffer);    
-    delay(100);
+    delay(10);
   }
   
   if (Serial.available() >= 1)

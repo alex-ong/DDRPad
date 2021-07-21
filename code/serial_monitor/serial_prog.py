@@ -33,7 +33,10 @@ def get_ports():
     """
     returns ["COM3", "COM4" ...]
     """
-    return list(list_ports.comports())
+    items = list(list_ports.comports())
+    for item in items:
+        print(item.device)
+        return [item.device for item in items]
 
 
 def load_config():
@@ -59,6 +62,17 @@ def set_saved_port(value):
     write_config(config)
 
 
+def get_sens():
+    config = load_config()
+    return config["arrows"]
+
+
+def set_sens_config(value):
+    config = load_config()
+    config["arrows"] = value
+    write_config(config)
+
+
 class SerialPort:
     def __init__(self):
         self.port = None
@@ -79,8 +93,7 @@ class SerialPort:
         lines = []
         lines_read = 0
         while self.port.in_waiting and lines_read < 100:
-            data = port.read_until()
-            print(data)
+            data = self.port.read_until()
             lines.append(data)
             lines_read += 1
         return lines
@@ -100,7 +113,7 @@ class SerialPort:
         self.port.write(START_DEBUG.to_bytes(1, ENDIAN))
 
     def port_debug_off(self):
-        port.write(STOP_DEBUG.to_bytes(1, ENDIAN))
+        self.port.write(STOP_DEBUG.to_bytes(1, ENDIAN))
 
 
 if __name__ == "__main__":
