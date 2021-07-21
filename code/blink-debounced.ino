@@ -11,7 +11,7 @@ const int LEFT = 18;
 const int DOWN = 19;
 const int RIGHT = 20;
 const int UP = 21;
-const unsigned long DEBOUNCE_TIME[] = { 5000, 50000, 5000, 5000};  //5000 = 5ms, 50000 = 50ms
+const unsigned long DEBOUNCE_TIME[] = { 5000, 5000, 5000, 5000};  //5000 = 5ms, 50000 = 50ms
 bool filtered[4] = {false, false, false, false};
 long unsigned int debounce_timer[4] = {0}; //last change to output
 
@@ -35,7 +35,7 @@ void loop() {
   //pin mappings for where things got soldered
   //left, down, right, up
   int p[4] = {LEFT,DOWN,RIGHT,UP};
-  int t[4] = {900,750,750,600};
+  int t[4] = {800,350,550,775};
   //analog read values
   int a[4] = {0,0,0,0}; 
   
