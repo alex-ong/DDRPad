@@ -60,6 +60,12 @@ class SerialGUI:
             topEntry.grid(row=0, column=index)
             self.sens_vars.append(trigger_var)
 
+        self.write_sens_out = Button(
+            master, text="Write sensitivity to pad", command=self.on_write_sens_remote
+        )
+        self.write_sens_out.pack()
+        self.write_sens_out["state"] = "disabled"
+
         self.debug_on = Button(
             master, text="Start pad data", command=self.turn_debug_on
         )
@@ -91,6 +97,11 @@ class SerialGUI:
         serial_prog.set_sens_config(values)
         self.update()
 
+    def on_write_sens_remote(self):
+        self.change_sens()  # bug where you click this when a textbox is focused.
+        self.connection.port_write_sens()
+        self.update()
+
     def update(self):
         self.master.update()
 
@@ -107,6 +118,7 @@ class SerialGUI:
         self.connect_button["text"] = "Disconnect"
         self.debug_on["state"] = "normal"
         self.debug_off["state"] = "disabled"
+        self.write_sens_out["state"] = "normal"
         self.update()
 
     def disconnect(self):
@@ -116,6 +128,7 @@ class SerialGUI:
         self.connect_button["text"] = "Connect"
         self.debug_on["state"] = "disabled"
         self.debug_off["state"] = "disabled"
+        self.write_sens_out["state"] = "disabled"
         self.update()
 
     def turn_debug_off(self):

@@ -101,7 +101,6 @@ class SerialPort:
     def port_write_sens(self):
         config = load_config()
         values = config["arrows"]
-        values = [value[0] for value in values]
         values = [value.to_bytes(2, ENDIAN) for value in values]
         header = WRITE_SENS.to_bytes(1, ENDIAN)
         values = [header] + values
