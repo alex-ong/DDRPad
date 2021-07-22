@@ -3,16 +3,16 @@
     "port": "COM3",
     "arrow_comment": "left, down up right, (trigger value)",
     "arrows": [
-        800,
-        350,
+        875,
+        500,
         775,
-        550
+        650
     ],
     "debounce": [
-        0,
-        0,
-        0,
-        0
+        5000,
+        5000,
+        5000,
+        5000
     ],
     "debounce_comment": "debounce in microseconds, 5000 = 5ms"
 }

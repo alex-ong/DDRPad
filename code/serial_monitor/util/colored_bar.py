@@ -1,4 +1,4 @@
-from tkinter import Canvas, Scale, IntVar, Entry
+from tkinter import Canvas, Scale, IntVar, Entry, Label
 import tkinter as tk
 
 
@@ -22,23 +22,40 @@ class ColoredBar(tk.Frame):
 
     def __init__(self, *args):
         super().__init__(*args)
+
+        # firmware value
+        self.firmware_value = Label(
+            self, text="(Pad's firmware sens)", justify="center"
+        )
+        self.firmware_value.pack(expand=True, fill="both")
+
         # current value
         self.canvas = Canvas(self, bd=1, relief="solid", width=98, height=15)
         self.canvas.pack(expand=True, fill="both")
         self.critical = 800
 
+        # frame the slider and entry together
+        frame = tk.Frame(self, highlightthickness=3, relief=tk.RIDGE, bg="black")
+        frame.pack(expand=True, fill="both")
+
         self.slider = Scale(
-            self, from_=0, to=1000, orient="horizontal", command=self.set_critical
+            frame,
+            from_=0,
+            to=1000,
+            orient="horizontal",
+            command=self.set_critical,
+            showvalue=0,
         )
         self.slider.pack(expand=True, fill="both")
 
-        self.entry = Entry(self, justify="center")
+        self.entry = Entry(frame, justify="center")
         self.entry.bind("<FocusOut>", self.set_critical_entry)
         self.entry.bind("<Return>", self.set_critical_entry)
         self.entry.pack(expand=True, fill="both")
         self.valid_range = self.RANGE
 
-        tk.Button(self).pack()
+    def set_firmware_value(self, value):
+        self.firmware_value["text"] = value
 
     def set_range(self, valid_range):
         """valid range for raw and cutoff"""

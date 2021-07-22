@@ -73,7 +73,7 @@ def set_sens_config(value):
     config["arrows"] = value
     write_config(config)
 
-    
+
 def get_debounce():
     config = load_config()
     return config["debounce"]
@@ -118,7 +118,7 @@ class SerialPort:
         values = b"".join(values)
         print(values)
         self.port.write(values)
-        
+
     def port_write_debounce(self):
         values = get_debounce()
         values = [value.to_bytes(4, ENDIAN) for value in values]

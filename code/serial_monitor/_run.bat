@@ -1,1 +1,1 @@
-pipenv run python gui.py
+start pipenv run start pythonw gui.py
