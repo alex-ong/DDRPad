@@ -1,7 +1,7 @@
 Serial Reader
 ===
 Ability to read current status of the arduino joystick for debugging and 
-setting sensitivity
+setting sensitivity. This is separate software to the Arduino firmware.
 
 
 Requirements
@@ -15,3 +15,5 @@ Run "_install.bat" to install it; this will use pipenv to create a virtual-env a
 Running
 ===
 Run "_run.bat" to run it
+
+![](https://raw.githubusercontent.com/alex-ong/DDRPad/master/code/serial_monitor/docs/gui-example.png)
