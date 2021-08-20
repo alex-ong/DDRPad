@@ -86,8 +86,12 @@ class SerialGUI:
         Label(frame, text="Target pad sensor value (drag)").grid(
             row=3, column=0, sticky="nsew"
         )
-        Label(frame, text="Target pad sensor value (type)").grid(
-            row=4, column=0, sticky="nsew"
+        Button(
+            frame, text="Target pad sensor value (type)", command=self.auto_sensitivity
+        ).grid(
+            row=4,
+            column=0,
+            sticky="nsew",
         )
 
         self.sens_bars = []
@@ -205,6 +209,17 @@ class SerialGUI:
         self.change_debounce()  # bug where you click this when a textbox is focused.
         self.connection.port_write_debounce()
         self.update()
+
+    def auto_sensitivity(self):
+        """
+        Automatically set sensitivity,
+        based on idle value
+        """
+        sens = [-50, -60, -60, -60]
+        for index, sen in enumerate(self.sens_bars):
+            if sen.raw_value > 0:  # connected
+                new_value = sen.raw_value + sens[index]
+                sen.set_critical(new_value)
 
     def on_write_sens_remote(self):
         # bug where defocus might not always work

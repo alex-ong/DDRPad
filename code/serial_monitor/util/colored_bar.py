@@ -33,6 +33,7 @@ class ColoredBar(tk.Frame):
         self.canvas = Canvas(self, bd=1, relief="solid", width=98, height=15)
         self.canvas.pack(expand=True, fill="both")
         self.critical = 800
+        self.raw_value = 0
 
         # frame the slider and entry together
         frame = tk.Frame(self, highlightthickness=3, relief=tk.RIDGE, bg="black")
@@ -84,6 +85,7 @@ class ColoredBar(tk.Frame):
         """
         sets the raw value
         """
+        self.raw_value = value
         value = float(value)
         self.canvas.delete(tk.ALL)
         width, height = self.canvas.winfo_width(), self.canvas.winfo_height()
