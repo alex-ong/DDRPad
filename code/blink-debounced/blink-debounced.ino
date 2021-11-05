@@ -1,6 +1,25 @@
 #include <Joystick.h>
 #include <EEPROMex.h>
 
+#ifndef cbi
+  #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#endif
+#ifndef sbi
+  #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#endif
+
+void SetFastADC()
+{
+
+    // set prescale to 16. s == 1, x ==0 from prescale table.
+    // 16 == 78000 hz, default is 128 which is 9600hz
+    // https://github.com/teejusb/fsr/issues/26
+    sbi(ADCSRA,ADPS2) ;
+    cbi(ADCSRA,ADPS1) ;
+    cbi(ADCSRA,ADPS0) ;
+
+}
+
 //This is the LED pin for a Teensy LC, may need to change on other boards
 const int LED_PIN = 17;
 //The analog threshold value for triggering a button
@@ -11,7 +30,7 @@ unsigned long time_now = 0;
 const int LEFT = 18;
 const int DOWN = 19;
 const int UP = 21;
-const int RIGHT = 20;
+const int RIGHT = 10;
 
 unsigned long DEBOUNCE_TIME[] = { 5000, 5000, 5000, 5000};  //5000 = 5ms, 50000 = 50ms
 int pins[4] = {LEFT,DOWN,UP,RIGHT};
@@ -75,6 +94,7 @@ void setup() {
   pinMode(DOWN, INPUT);
   pinMode(RIGHT, INPUT);
   pinMode(UP, INPUT);  
+  SetFastADC();
   ReadIntsFromEEPROM(SENS_OFFSET_EEPROM, sens);
   //todo: implement.
   //ReadConfigFromEEPROM(DEBOUNCE_OFFSET_EEPROM, DEBOUNCE_TIME);
@@ -93,7 +113,9 @@ void loop() {
   //read each pin, and set that Joystick button appropriately
   for(int i = 0; i < 4; ++i)
   {
-    a[i] = analogRead(pins[i]);
+    int value = analogRead(pins[i]);
+    if (value >= 1023 || value <= 100) value = filtered[i]; //use old value on error.
+    a[i] = value;
     bool newValue = a[i] < sens[i];
     bool oldValue = filtered[i];
     bool timerValid = (time_now - debounce_timer[i]) >= DEBOUNCE_TIME[i];
